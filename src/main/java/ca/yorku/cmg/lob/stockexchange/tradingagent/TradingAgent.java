@@ -5,7 +5,10 @@ import ca.yorku.cmg.lob.stockexchange.events.Event;
 import ca.yorku.cmg.lob.stockexchange.events.NewsBoard;
 import ca.yorku.cmg.lob.trader.Trader;
 
-public abstract class TradingAgent {
+/**
+ * An trading agent that receives news and reacts by submitting ask or bid orders.
+ */
+public abstract class TradingAgent implements INewsObserver { // 1. Implement interface
     protected Trader t;
     protected StockExchange exc;
     protected NewsBoard news;
@@ -16,13 +19,25 @@ public abstract class TradingAgent {
         this.exc = e;
         this.news = n;
         this.strategy = strategy;
+        
+        // 2. Register for notifications at object creation time
+        this.news.registerObserver(this);
     }
     
+    // 3. Implement the update method from INewsObserver
+    @Override
+    public void update(Event e) {
+        examineEvent(e);
+    }
+
     public void timeAdvancedTo(long time) {
         pollForEvents(time);
     }
 
-    private void examineEvent(Event e) {
+    /**
+     * Examine if an event is relevant for the Agent.
+     */
+    protected void examineEvent(Event e) { // Changed to protected/public so update() can use it
         int positionInSecurity = exc.getAccounts().getTraderAccount(t).getPosition(e.getSecrity().getTicker());
         if (positionInSecurity > 0) {
             actOnEvent(e, positionInSecurity, exc.getPrice(e.getSecrity().getTicker()));
